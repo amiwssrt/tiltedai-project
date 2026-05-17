@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and statistics.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Auth UID" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "winRate": { "type": "number" }
+      },
+      "required": ["userId"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "A multiplayer game match.",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string" },
+        "player1": { "type": "string" },
+        "player2": { "type": "string" },
+        "boardState": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["matchId", "player1", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User configurations."
+    },
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/Match" },
+      "description": "Multiplayer match data."
+    }
+  }
+}

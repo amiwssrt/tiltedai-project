@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isSignedIn(); 
+      allow create: if isOwner(userId) && incoming().keys().hasAll(['userId']) && incoming().keys().size() <= 4 && incoming().userId == request.auth.uid;
+      allow update: if isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'winRate']);
+      allow delete: if false;
+    }
+
+    // Matches Collection
+    match /matches/{matchId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().keys().hasAll(['matchId', 'player1', 'status']) && incoming().player1 == request.auth.uid;
+      allow update: if isSignedIn() && (
+        ( (existing().player1 == request.auth.uid || existing().get('player2', '') == request.auth.uid) && incoming().diff(existing()).affectedKeys().hasOnly(['boardState', 'status']) ) ||
+        ( !('player2' in existing()) && incoming().player2 == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['player2', 'status']) )
+      );
+      allow delete: if false;
+    }
+  }
+}
